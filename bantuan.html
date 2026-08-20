@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bantuan  UMKM KU</title>
+<meta name="description" content="Tanya jawab seputar UMKM KU: gratis atau tidak, perlu daftar atau tidak, di mana data disimpan, dan bedanya dengan aplikasi lain.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233B1F3E'/%3E%3Cpath d='M32 50V34' stroke='%23F2A93B' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 40c0-9-6-12-14-12 0 9 6 12 14 12z' fill='%23F2A93B'/%3E%3Cpath d='M32 30c0-8 5-11 12-11 0 8-5 11-12 11z' fill='%23F8CE7A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="app-header"></header>
+<main>
+  <div class="wrap page-head">
+    <span class="crumb"><a href="index.html">Beranda</a> / Bantuan</span>
+    <h1>Sering ditanyakan.</h1>
+    <p>Jawaban singkat untuk pertanyaan yang paling sering muncul.</p>
+  </div>
+
+  <section style="padding-top:22px">
+    <div class="wrap">
+      <div class="faq rv">
+        <details open>
+          <summary>Apakah UMKM KU gratis?
+            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="body">Ya, 100% gratis. Semua panduan, checklist, dan alat bantu bisa dipakai tanpa biaya. Mencatat uang juga gratis  Anda hanya diminta masuk agar catatan tersimpan ke akun Anda.</div>
+        </details>
+        <details>
+          <summary>Apakah harus daftar atau instal aplikasi?
+            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="body">UMKM KU berjalan di browser HP, tablet, atau laptop  tidak perlu mengunduh apa pun dan tidak memakan memori HP. Membaca informasi tidak butuh akun. Akun (cukup nama + nomor HP) hanya diminta saat Anda ingin <b>menyimpan</b> sesuatu, misalnya catatan keuangan.</div>
+        </details>
+        <details>
+          <summary>Data saya disimpan di mana?
+            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="body">Pada prototipe ini, semua data tersimpan di browser perangkat Anda sendiri (backend dummy)  tidak dikirim ke server mana pun. Saat versi resmi nanti, kami akan selalu menjelaskan untuk apa setiap data diminta sebelum Anda mengisinya.</div>
+        </details>
+        <details>
+          <summary>Apakah ini situs resmi pemerintah?
+            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="body">Bukan. UMKM KU merangkum informasi dengan bahasa sederhana, lalu mengarahkan Anda ke situs resmi (seperti oss.go.id dan bpjph.halal.go.id) untuk pengurusan yang sesungguhnya.</div>
+        </details>
+        <details>
+          <summary>Apa bedanya dengan SAPA UMKM atau aplikasi kasir?
+            <svg class="icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+          </summary>
+          <div class="body">SAPA UMKM adalah aplikasi resmi pemerintah dengan layanan lengkap (verifikasi, dompet digital, marketplace). Aplikasi kasir seperti Qasir/Moka fokus ke transaksi di toko. UMKM KU adalah <b>pintu masuk</b>: kami membantu Anda yang baru mulai  memahami apa yang perlu dilakukan, membiasakan pencatatan sederhana, lalu mengarahkan ke layanan resmi saat Anda sudah siap.</div>
+        </details>
+      </div>
+
+      <div class="demo-box rv" style="max-width:760px;margin-top:20px">
+        <b>Masih butuh bantuan?</b> Tulis pertanyaan Anda dan kirim ke <b>halo@umkmku.id</b> (contoh)  kami jawab dengan bahasa yang mudah dipahami, tanpa istilah rumit.
+      </div>
+    </div>
+  </section>
+</main>
+<footer id="app-footer"></footer>
+
+<script src="backend/db.js"></script>
+<script src="backend/seed.js"></script>
+<script src="backend/auth.js"></script>
+<script src="backend/api.js"></script>
+<script src="js/app.js"></script>
+<script>App.boot("bantuan");</script>
+</body>
+</html>

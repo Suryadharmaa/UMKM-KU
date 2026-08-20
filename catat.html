@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catat Uang  UMKM KU</title>
+<meta name="description" content="Catat uang masuk dan keluar usaha Anda. Tersimpan rapi di akun, bisa diunduh sebagai CSV.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233B1F3E'/%3E%3Cpath d='M32 50V34' stroke='%23F2A93B' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 40c0-9-6-12-14-12 0 9 6 12 14 12z' fill='%23F2A93B'/%3E%3Cpath d='M32 30c0-8 5-11 12-11 0 8-5 11-12 11z' fill='%23F8CE7A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="app-header"></header>
+<main>
+  <div class="wrap page-head">
+    <span class="crumb"><a href="index.html">Beranda</a> / Catat Uang</span>
+    <div class="greet">
+      <h1 id="greetNama">Catat Uang</h1>
+      <span class="usaha" id="greetUsaha" style="display:none"></span>
+    </div>
+    <p>Pilih <b>Uang Masuk</b> atau <b>Uang Keluar</b>, isi jumlahnya, selesai. Semua catatan tersimpan di akun Anda.</p>
+  </div>
+
+  <section style="padding-top:22px">
+    <div class="wrap two-col">
+
+      <!-- Form -->
+      <div>
+        <div class="demo-card" aria-label="Form catatan">
+          <div class="seg" role="group" aria-label="Jenis catatan">
+            <button type="button" id="btnIn" class="on-in">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>
+              Uang Masuk
+            </button>
+            <button type="button" id="btnOut">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>
+              Uang Keluar
+            </button>
+          </div>
+          <div class="field">
+            <label for="amt">Jumlah (Rp)</label>
+            <input id="amt" inputmode="numeric" placeholder="contoh: 50.000" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="note">Keterangan singkat</label>
+            <input id="note" placeholder="contoh: Jual 10 porsi gado-gado" maxlength="48" autocomplete="off">
+            <div class="hint">Tulis seperlunya saja  yang penting Anda paham nanti.</div>
+          </div>
+          <button type="button" id="addTx" class="btn btn-plum" style="width:100%">
+            <svg class="icon" style="width:18px;height:18px" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            Simpan Catatan
+          </button>
+        </div>
+        <div class="privacy">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="m9.5 12 2 2 3.5-4"/></svg>
+          <span><b>Data Anda milik Anda.</b> Pada prototipe ini catatan tersimpan di perangkat, terikat pada akun yang sedang masuk.</span>
+        </div>
+      </div>
+
+      <!-- Ringkasan + Riwayat -->
+      <div>
+        <div class="summary" aria-live="polite">
+          <div class="cell"><small>Total Masuk</small><b id="sumIn">…</b></div>
+          <div class="cell"><small>Total Keluar</small><b id="sumOut">…</b></div>
+          <div class="cell profit"><small>Perkiraan Untung · <span id="sumCount"></span></small><b id="sumProfit">…</b></div>
+        </div>
+
+        <div class="toolbar">
+          <b style="color:var(--plum-900);font-size:15px">Riwayat Catatan</b>
+          <span class="spacer"></span>
+          <button type="button" class="tool-btn" id="btnCsv">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>
+            Unduh CSV
+          </button>
+          <button type="button" class="tool-btn danger" id="clearTx">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M6.5 7l1 13h9l1-13"/></svg>
+            Hapus semua
+          </button>
+        </div>
+
+        <div class="loading" id="txLoading">Memuat catatan Anda…</div>
+        <div class="tx-list" id="txList"></div>
+        <div class="empty" id="txEmpty" style="display:none">Belum ada catatan. Coba tambah satu  misalnya penjualan hari ini.</div>
+      </div>
+
+    </div>
+  </section>
+</main>
+<footer id="app-footer"></footer>
+
+<script src="backend/db.js"></script>
+<script src="backend/seed.js"></script>
+<script src="backend/auth.js"></script>
+<script src="backend/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+App.boot("catat");
+
+(function () {
+  /* Halaman ini butuh akun  belum masuk? Alihkan ke halaman masuk. */
+  if (!Auth.guard("catat.html")) return;
+
+  const u = Auth.current();
+  document.getElementById("greetNama").textContent = "Halo, " + u.nama.split(" ")[0] + " 👋";
+  if (u.usaha) {
+    const c = document.getElementById("greetUsaha");
+    c.textContent = u.usaha;
+    c.style.display = "";
+  }
+
+  let mode = "in";
+  const btnIn = document.getElementById("btnIn");
+  const btnOut = document.getElementById("btnOut");
+  const amt = document.getElementById("amt");
+  const note = document.getElementById("note");
+
+  function setMode(m) {
+    mode = m;
+    btnIn.className = m === "in" ? "on-in" : "";
+    btnOut.className = m === "out" ? "on-out" : "";
+  }
+  btnIn.addEventListener("click", () => setMode("in"));
+  btnOut.addEventListener("click", () => setMode("out"));
+
+  amt.addEventListener("input", function () {
+    const d = amt.value.replace(/[^\d]/g, "").slice(0, 12);
+    amt.value = d ? Number(d).toLocaleString("id-ID") : "";
+  });
+
+  function renderRingkasan(r) {
+    document.getElementById("sumIn").textContent = App.rp(r.masuk);
+    document.getElementById("sumOut").textContent = App.rp(r.keluar);
+    document.getElementById("sumProfit").textContent = App.rp(r.untung);
+    document.getElementById("sumCount").textContent = r.jumlahCatatan + " catatan tersimpan";
+  }
+
+  function renderList(rows) {
+    const list = document.getElementById("txList");
+    const empty = document.getElementById("txEmpty");
+    document.getElementById("txLoading").style.display = "none";
+    if (!rows.length) {
+      list.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    list.innerHTML = rows.map(t =>
+      '<div class="tx ' + (t.jenis === "masuk" ? "in" : "out") + '"><span class="tag"></span>' +
+      '<span class="what">' + App.esc(t.catatan || (t.jenis === "masuk" ? "Uang masuk" : "Uang keluar")) +
+      "<small>" + App.tgl(t.at) + "</small></span>" +
+      '<span class="amt">' + (t.jenis === "masuk" ? "+" : "−") + App.rp(t.jumlah) + "</span>" +
+      '<button type="button" data-id="' + t.id + '" aria-label="Hapus catatan ini">✕</button></div>'
+    ).join("");
+    list.querySelectorAll("button").forEach(b => {
+      b.addEventListener("click", async function () {
+        await Api.transaksi.remove(b.getAttribute("data-id"));
+        muat();
+      });
+    });
+  }
+
+  async function muat() {
+    const [rows, ring] = await Promise.all([Api.transaksi.list(), Api.transaksi.ringkasan()]);
+    renderList(rows);
+    renderRingkasan(ring);
+  }
+
+  document.getElementById("addTx").addEventListener("click", async function () {
+    const jumlah = Number(amt.value.replace(/[^\d]/g, ""));
+    try {
+      await Api.transaksi.add({ jenis: mode === "in" ? "masuk" : "keluar", jumlah: jumlah, catatan: note.value });
+      amt.value = ""; note.value = ""; note.focus();
+      muat();
+    } catch (e) {
+      amt.focus();
+      amt.style.borderColor = "var(--coral)";
+      setTimeout(() => { amt.style.borderColor = ""; }, 1200);
+    }
+  });
+
+  document.getElementById("clearTx").addEventListener("click", async function () {
+    if (confirm("Hapus SEMUA catatan di akun ini? Tindakan ini tidak bisa dibatalkan.")) {
+      await Api.transaksi.clear();
+      muat();
+    }
+  });
+
+  document.getElementById("btnCsv").addEventListener("click", async function () {
+    const rows = await Api.transaksi.list();
+    if (!rows.length) { alert("Belum ada catatan untuk diunduh."); return; }
+    const escCsv = s => '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"';
+    const lines = ["Tanggal;Jenis;Jumlah (Rp);Keterangan"];
+    rows.slice().reverse().forEach(r => {
+      lines.push([
+        r.at.slice(0, 10),
+        r.jenis === "masuk" ? "Uang Masuk" : "Uang Keluar",
+        r.jumlah,
+        escCsv(r.catatan)
+      ].join(";"));
+    });
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "catatan-umkmku.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  });
+
+  muat();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cek Kesiapan  UMKM KU</title>
+<meta name="description" content="Jawab 5 pertanyaan jujur dan ketahui seberapa siap usaha Anda  termasuk kesiapan mencari modal seperti KUR.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233B1F3E'/%3E%3Cpath d='M32 50V34' stroke='%23F2A93B' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 40c0-9-6-12-14-12 0 9 6 12 14 12z' fill='%23F2A93B'/%3E%3Cpath d='M32 30c0-8 5-11 12-11 0 8-5 11-12 11z' fill='%23F8CE7A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="app-header"></header>
+<main>
+  <div class="wrap page-head">
+    <span class="crumb"><a href="index.html">Beranda</a> / Cek Kesiapan</span>
+    <h1>Cek Kesiapan Usaha &amp; Modal</h1>
+    <p>Jawab 5 pertanyaan jujur  tidak ada jawaban salah. Hasilnya membantu Anda tahu langkah berikutnya.</p>
+  </div>
+
+  <div class="wrap">
+    <div class="quiz-wrap rv">
+      <div style="position:relative">
+        <span class="eyebrow" style="background:rgba(242,169,59,.16);border-color:var(--gold-500);color:var(--gold-300)">Cek Kesiapan &amp; Modal</span>
+        <h2 class="sec-title" style="margin-top:12px">Usaha Anda sudah siap sampai mana?</h2>
+        <p class="sec-sub">Termasuk kesiapan mencari modal seperti KUR. Skor tersimpan otomatis agar bisa Anda bandingkan nanti.</p>
+      </div>
+      <div class="quiz-box">
+        <div id="quizPlay">
+          <div class="dots" id="quizDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+          <div class="q-text" id="quizQ">Memuat pertanyaan…</div>
+          <p class="q-why" id="quizWhy"></p>
+          <div class="q-btns">
+            <button type="button" class="yes" id="qYes">Sudah ✓</button>
+            <button type="button" class="no" id="qNo">Belum</button>
+          </div>
+          <button type="button" class="q-back" id="qBack">← Kembali ke pertanyaan sebelumnya</button>
+        </div>
+        <div class="result" id="quizResult" aria-live="polite">
+          <div class="saved-note" id="savedNote" style="display:none">
+            <svg class="icon" style="width:15px;height:15px" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>
+            Skor tersimpan di akun/perangkat Anda
+          </div>
+          <div class="gauge">
+            <svg width="150" height="150" viewBox="0 0 150 150">
+              <circle cx="75" cy="75" r="64" fill="none" stroke="#F4E9F2" stroke-width="14"/>
+              <circle id="gaugeArc" cx="75" cy="75" r="64" fill="none" stroke="#F2A93B" stroke-width="14" stroke-linecap="round" stroke-dasharray="402.1" stroke-dashoffset="402.1"/>
+            </svg>
+            <div class="num" id="gaugeNum">0%</div>
+          </div>
+          <h3 id="resTitle"></h3>
+          <p id="resText"></p>
+          <a href="panduan.html" class="btn btn-plum" id="resBtn" style="margin-bottom:10px">Mulai dari Panduan</a>
+          <br>
+          <button type="button" class="q-back" id="qRestart">Ulangi cek dari awal</button>
+        </div>
+      </div>
+      <div class="last-score" id="lastScore"></div>
+    </div>
+  </div>
+</main>
+<footer id="app-footer"></footer>
+
+<script src="backend/db.js"></script>
+<script src="backend/seed.js"></script>
+<script src="backend/auth.js"></script>
+<script src="backend/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+App.boot("cek");
+
+(function () {
+  const QUESTIONS = [
+    { q: "Apakah usaha Anda sudah berjalan dan punya pembeli?",
+      w: "Usaha yang sudah berjalan  sekecil apa pun  adalah bukti awal untuk diri Anda dan calon pemberi modal." },
+    { q: "Apakah Anda rutin mencatat uang masuk dan keluar?",
+      w: "Catatan sederhana membuat untung terlihat  dan jadi syarat penting saat mengajukan modal seperti KUR." },
+    { q: "Apakah usaha Anda sudah punya NIB (izin dasar)?",
+      w: "NIB gratis dan bisa diurus online. Hampir semua bantuan dan pelatihan resmi memintanya." },
+    { q: "Apakah uang usaha dan uang pribadi sudah terpisah?",
+      w: "Rekening atau dompet khusus usaha membuat kondisi keuangan usaha jelas terbaca." },
+    { q: "Apakah Anda tahu ke mana mencari pelatihan atau bantuan modal?",
+      w: "Mengetahui jalurnya  misalnya SAPA UMKM, bank penyalur KUR, atau dinas koperasi setempat  menghemat banyak waktu." }
+  ];
+  let qi = 0, answers = [];
+  const qEl = document.getElementById("quizQ"), wEl = document.getElementById("quizWhy");
+  const dots = document.getElementById("quizDots"), play = document.getElementById("quizPlay");
+  const result = document.getElementById("quizResult");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Riwayat skor dari backend dummy */
+  Api.kesiapan.terakhir().then(function (k) {
+    if (!k) return;
+    const el = document.getElementById("lastScore");
+    el.classList.add("show");
+    el.innerHTML = "Skor terakhir Anda: <b>" + k.skor + "%</b> · diperbarui " + App.tgl(k.at);
+  });
+
+  function renderQ() {
+    qEl.textContent = "Pertanyaan " + (qi + 1) + " dari 5  " + QUESTIONS[qi].q;
+    wEl.textContent = QUESTIONS[qi].w;
+    Array.prototype.forEach.call(dots.children, (d, i) => { d.className = i <= qi ? "on" : ""; });
+    document.getElementById("qBack").style.visibility = qi > 0 ? "visible" : "hidden";
+  }
+
+  function answer(v) {
+    answers[qi] = v;
+    if (qi < QUESTIONS.length - 1) { qi++; renderQ(); } else { showResult(); }
+  }
+  document.getElementById("qYes").addEventListener("click", () => answer(1));
+  document.getElementById("qNo").addEventListener("click", () => answer(0));
+  document.getElementById("qBack").addEventListener("click", function () { if (qi > 0) { qi--; renderQ(); } });
+  document.getElementById("qRestart").addEventListener("click", function () {
+    qi = 0; answers = [];
+    result.className = "result";
+    play.style.display = "block";
+    renderQ();
+  });
+
+  function showResult() {
+    const yes = answers.reduce((a, b) => a + b, 0);
+    const pct = Math.round(yes / QUESTIONS.length * 100);
+    play.style.display = "none";
+    result.className = "result show";
+
+    let t, x, btn, href;
+    if (pct <= 40) {
+      t = "Awal yang bagus  semua orang mulai dari sini.";
+      x = "Fokus dulu ke langkah dasar: jalankan usaha secara rutin dan mulai catat uang setiap hari. Dua hal itu mengubah segalanya.";
+      btn = "Mulai dari Panduan Usaha"; href = "panduan.html";
+    } else if (pct <= 80) {
+      t = "Setengah jalan  tinggal lengkapi fondasinya.";
+      x = "Prioritas Anda berikutnya: lengkapi legalitas dasar (mulai dari NIB) dan rapikan pencatatan agar siap mengajukan modal.";
+      btn = "Lengkapi Checklist Izin"; href = "layanan.html";
+    } else {
+      t = "Siap berkembang!";
+      x = "Fondasi Anda kuat. Saatnya menyiapkan dokumen untuk modal (misalnya KUR di bank terdekat) dan ikut pelatihan peningkatan kapasitas.";
+      btn = "Baca Materi KUR"; href = "belajar.html?id=mengenal-kur";
+    }
+    document.getElementById("resTitle").textContent = t;
+    document.getElementById("resText").textContent = x;
+    const rb = document.getElementById("resBtn");
+    rb.textContent = btn; rb.setAttribute("href", href);
+
+    /* Simpan skor ke backend dummy */
+    Api.kesiapan.save(pct).then(function () {
+      document.getElementById("savedNote").style.display = "inline-flex";
+    });
+
+    const arc = document.getElementById("gaugeArc"), num = document.getElementById("gaugeNum");
+    const circ = 402.1, target = circ * (1 - pct / 100);
+    if (reduced) { arc.style.strokeDashoffset = target; num.textContent = pct + "%"; return; }
+    let start = null;
+    function anim(ts) {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / 900, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      arc.style.strokeDashoffset = circ - (circ - target) * e;
+      num.textContent = Math.round(pct * e) + "%";
+      if (p < 1) requestAnimationFrame(anim);
+    }
+    requestAnimationFrame(anim);
+  }
+
+  renderQ();
+})();
+</script>
+</body>
+</html>

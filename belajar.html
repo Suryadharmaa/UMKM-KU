@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belajar — UMKM KU</title>
+<meta name="description" content="Materi bertingkat untuk pelaku UMKM: Dasar, Menengah, dan Siap UMKM. Artikel langkah demi langkah + video YouTube yang bisa diputar langsung.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233B1F3E'/%3E%3Cpath d='M32 50V34' stroke='%23F2A93B' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 40c0-9-6-12-14-12 0 9 6 12 14 12z' fill='%23F2A93B'/%3E%3Cpath d='M32 30c0-8 5-11 12-11 0 8-5 11-12 11z' fill='%23F8CE7A'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="app-header"></header>
+<main>
+  <div class="wrap page-head">
+    <span class="crumb"><a href="index.html">Beranda</a> / Belajar</span>
+    <h1>Belajar</h1>
+    <p>Materi bertingkat — artikel langkah demi langkah dan video yang bisa diputar langsung. Mulai dari tingkat yang paling sesuai dengan kondisi usaha Anda.</p>
+  </div>
+
+  <section style="padding-top:22px">
+    <div class="wrap">
+
+      <!-- Daftar materi per tingkat (dari backend dummy) -->
+      <div id="listView">
+        <div class="loading" id="learnLoading">Memuat materi…</div>
+        <div class="tiers" id="tiersGrid"></div>
+      </div>
+
+      <!-- Detail materi -->
+      <div id="detailView" style="display:none">
+        <a class="back-link" href="belajar.html">
+          <svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          Semua materi
+        </a>
+        <article class="article">
+          <div class="meta" id="artMeta"></div>
+          <h1 id="artTitle"></h1>
+          <p id="artRingkas" style="color:var(--muted)"></p>
+          <div id="artBody"></div>
+          <div class="cta-in">
+            <span id="artCtaText"><b>Siap praktik?</b></span>
+            <a href="catat.html" class="btn btn-gold small" id="artCtaBtn">Buka Catat Uang</a>
+          </div>
+        </article>
+      </div>
+
+    </div>
+  </section>
+</main>
+<footer id="app-footer"></footer>
+
+<script src="backend/db.js"></script>
+<script src="backend/seed.js"></script>
+<script src="backend/auth.js"></script>
+<script src="backend/api.js"></script>
+<script src="js/app.js"></script>
+<script>
+App.boot("belajar");
+
+(function () {
+  const BADGE = { "Pemasaran": "gold", "Keuangan": "green", "Legalitas": "", "Modal": "", "Operasional": "green", "Memulai": "gold" };
+  const KAT_ICON = {
+    "Memulai":     '<path d="M12 21v-7"/><path d="M12 14c0-4-3-6-7-6 0 4 3 6 7 6z"/><path d="M12 10c0-3.5 2.5-5 6-5 0 3.5-2.5 5-6 5z"/>',
+    "Keuangan":    '<rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10.5h18"/><circle cx="16.5" cy="15.5" r="1.1"/>',
+    "Legalitas":   '<rect x="6" y="5" width="13" height="17" rx="2"/><path d="M9 5a3 3 0 0 1 6 0"/><path d="m9.8 14.5 2 2 3.6-4.2"/>',
+    "Pemasaran":   '<path d="M3 11v3a1 1 0 0 0 1 1h2l4 5V5L6 10H4a1 1 0 0 0-1 1z"/><path d="M14 8a5 5 0 0 1 0 8"/>',
+    "Operasional": '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><path d="M8 14h4"/>',
+    "Modal":       '<circle cx="9" cy="9" r="5.5"/><path d="M14.8 5.9a5.5 5.5 0 1 1-8.9 8.9"/>'
+  };
+  const TIER_SUB = {
+    "Dasar":     "Fondasi membangun usaha dari nol — mulai di sini bila baru merintis.",
+    "Menengah":  "Administrasi, pencatatan, dan legalitas — untuk usaha yang sudah berjalan.",
+    "Siap UMKM": "Semua fondasi sudah siap — saatnya modal, ekspansi, dan berkembang."
+  };
+  const TIER_ICON = { "Dasar": "①", "Menengah": "②", "Siap UMKM": "③" };
+  const COLLAPSE_AT = 4;
+
+  const CTA = {
+    "pisahkan-uang":       { text: "<b>Siap praktik?</b> Mulai pisahkan catatan hari ini.", btn: "Buka Catat Uang",      href: "catat.html" },
+    "harga-jual":          { text: "<b>Siap praktik?</b> Cek modal Anda dari catatan.",     btn: "Buka Catat Uang",      href: "catat.html" },
+    "pembukuan-sederhana": { text: "<b>Siap praktik?</b> Mulai buku kas Anda sekarang.",     btn: "Buka Catat Uang",      href: "catat.html" },
+    "administrasi-usaha":  { text: "<b>Siap praktik?</b> Rapikan catatan Anda di sini.",      btn: "Buka Catat Uang",      href: "catat.html" },
+    "modal-awal":          { text: "<b>Sudah punya modal?</b> Catat setoran pertama Anda.",   btn: "Buka Catat Uang",      href: "catat.html" },
+    "apa-itu-nib":         { text: "<b>Sudah punya NIB?</b> Centang progres Anda.",           btn: "Buka Checklist Izin",   href: "layanan.html" },
+    "legalitas-lengkap":   { text: "<b>Siap mengurus?</b> Pantau progres legalitas Anda.",    btn: "Buka Checklist Izin",   href: "layanan.html" },
+    "validasi-ide":        { text: "<b>Ide sudah teruji?</b> Lanjut ke langkah awal.",        btn: "Baca Panduan Usaha",    href: "panduan.html" },
+    "mengenal-kur":        { text: "<b>Merasa siap?</b> Ukur dulu skor kesiapan Anda.",       btn: "Cek Kesiapan Sekarang", href: "cek.html" },
+    "ekspansi-online":     { text: "<b>Sebelum ekspansi:</b> pastikan kesiapan Anda terukur.", btn: "Cek Kesiapan Sekarang", href: "cek.html" },
+    "siap-berkembang":     { text: "<b>Semua siap?</b> Pastikan skor kesiapan Anda tinggi.",  btn: "Cek Kesiapan Sekarang", href: "cek.html" },
+    "video-kur":           { text: "<b>Merasa siap?</b> Ukur dulu skor kesiapan Anda.",       btn: "Cek Kesiapan Sekarang", href: "cek.html" },
+    "video-nib":           { text: "<b>Sudah nonton?</b> Centang progres izin Anda.",         btn: "Buka Checklist Izin",   href: "layanan.html" }
+  };
+
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+
+  function thumbHTML(m) {
+    const icon = KAT_ICON[m.kategori] || KAT_ICON["Memulai"];
+    let inner = '<svg class="icon" viewBox="0 0 24 24">' + icon + "</svg>";
+    if (m.jenis === "video") {
+      inner += '<img src="https://i.ytimg.com/vi/' + m.youtube + '/hqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">' +
+               '<span class="play-badge"><i><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg></i></span>';
+    }
+    return '<span class="m-thumb" aria-hidden="true">' + inner + "</span>";
+  }
+
+  function cardHTML(m, hidden) {
+    const meta = m.jenis === "video"
+      ? '<svg class="icon" viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg> Video · ' + m.menit + ' menit'
+      : 'Artikel · ' + m.menit + ' menit baca';
+    return '<a class="m-card' + (hidden ? " m-hidden" : "") + '" href="belajar.html?id=' + m.id + '">' +
+      thumbHTML(m) +
+      '<span class="m-info">' +
+        '<span class="m-kat">' + App.esc(m.kategori) + '</span>' +
+        '<span class="m-title">' + App.esc(m.judul) + "</span>" +
+        '<span class="m-meta">' + meta + "</span>" +
+      "</span></a>";
+  }
+
+  function tierHTML(tingkat, items) {
+    const cards = items.map((m, i) => cardHTML(m, i >= COLLAPSE_AT)).join("");
+    const more = items.length > COLLAPSE_AT
+      ? '<button type="button" class="m-more" data-tier="' + tingkat + '">Lihat semua (' + items.length + ') ↓</button>'
+      : "";
+    return '<div class="tier rv in" data-tier-panel="' + tingkat + '">' +
+      '<div class="tier-head"><h3>' + TIER_ICON[tingkat] + " " + tingkat + '</h3><span class="arrow">→</span><span class="count">' + items.length + ' materi</span></div>' +
+      '<div class="tier-sub">' + TIER_SUB[tingkat] + "</div>" +
+      cards + more +
+      "</div>";
+  }
+
+  function showList() {
+    Api.materi.byTingkat().then(function (grouped) {
+      document.getElementById("learnLoading").style.display = "none";
+      const grid = document.getElementById("tiersGrid");
+      grid.innerHTML = ["Dasar", "Menengah", "Siap UMKM"].map(t => tierHTML(t, grouped[t] || [])).join("");
+      grid.querySelectorAll(".m-more").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const panel = grid.querySelector('[data-tier-panel="' + btn.dataset.tier + '"]');
+          panel.querySelectorAll(".m-hidden").forEach(c => c.classList.remove("m-hidden"));
+          btn.remove();
+        });
+      });
+    });
+  }
+
+  function setCta(id) {
+    const cta = CTA[id] || { text: "<b>Siap praktik?</b>", btn: "Buka Catat Uang", href: "catat.html" };
+    document.getElementById("artCtaText").innerHTML = cta.text;
+    const btn = document.getElementById("artCtaBtn");
+    btn.textContent = cta.btn; btn.setAttribute("href", cta.href);
+  }
+
+  function showDetail(id) {
+    Api.materi.get(id).then(function (m) {
+      if (!m) { location.href = "belajar.html"; return; }
+      document.getElementById("listView").style.display = "none";
+      document.getElementById("detailView").style.display = "block";
+      document.title = m.judul + " — UMKM KU";
+      const b = BADGE[m.kategori] || "";
+      const jenisLabel = m.jenis === "video" ? "VIDEO" : "ARTIKEL";
+      document.getElementById("artMeta").innerHTML =
+        '<span class="badge ' + b + '">' + App.esc(m.kategori.toUpperCase()) + '</span>' +
+        '<span class="badge">' + App.esc(m.tingkat.toUpperCase()) + '</span>' +
+        '<span class="learn-meta">' + jenisLabel + " · " + m.menit + " menit</span>" +
+        (m.kanal ? '<span class="learn-meta">Sumber: ' + App.esc(m.kanal) + "</span>" : "");
+      document.getElementById("artTitle").textContent = m.judul;
+      document.getElementById("artRingkas").textContent = m.ringkas;
+
+      const body = document.getElementById("artBody");
+      if (m.jenis === "video") {
+        body.innerHTML =
+          '<div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/' + m.youtube + '" title="' + App.esc(m.judul) +
+          '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>' +
+          '<div class="poin-title">Yang akan Anda pelajari:</div>' +
+          '<ul class="poin-list">' + (m.poin || []).map(p =>
+            '<li><svg class="icon" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg><span>' + App.esc(p) + "</span></li>"
+          ).join("") + "</ul>" +
+          '<p style="font-size:13px;color:var(--muted)">Video diputar langsung di halaman ini lewat pemutar resmi YouTube. <a href="https://www.youtube.com/watch?v=' + m.youtube + '" target="_blank" rel="noopener" style="color:var(--gold-600);font-weight:700">Tonton di YouTube ↗</a></p>';
+      } else {
+        body.innerHTML = m.isi.map(p => "<p>" + App.esc(p) + "</p>").join("");
+      }
+      setCta(m.id);
+      window.scrollTo(0, 0);
+    });
+  }
+
+  if (id) showDetail(id); else showList();
+})();
+</script>
+</body>
+</html>
