@@ -1,4 +1,4 @@
-# UMKM KU  Prototipe v2 (Frontend + Backend Dummy)
+# UMKM KU — Prototipe v2 (Frontend + Backend Dummy)
 
 Website interaktif untuk membantu pelaku UMKM Indonesia mengakses informasi usaha:
 panduan mulai usaha, pencatatan keuangan sederhana, checklist legalitas, cek kesiapan
@@ -10,16 +10,16 @@ modal, dan materi belajar singkat. Ringan, mobile-first, ramah pemula, bahasa se
 
 Tidak butuh instalasi apa pun:
 
-- **Paling cepat:** klik dua kali `index.html`  langsung jalan dari browser.
+- **Paling cepat:** klik dua kali `index.html` — langsung jalan dari browser.
 - **Disarankan (paling stabil):** jalankan server statis kecil dari folder ini, misalnya
   `python3 -m http.server 8000` lalu buka `http://localhost:8000`.
 - **Untuk demo ke orang lain:** upload seluruh folder ke Netlify Drop / Vercel /
-  GitHub Pages  semuanya statis, gratis.
+  GitHub Pages — semuanya statis, gratis.
 
 ### Akun Demo (sekali klik)
 
 Di halaman **Masuk**, tekan **"Masuk sebagai Akun Demo"** → masuk sebagai
-*Budi Santoso  Warung Gado-Gado Barokah*, sudah berisi 7 contoh transaksi,
+*Budi Santoso — Warung Gado-Gado Barokah*, sudah berisi 7 contoh transaksi,
 progres legalitas, dan skor kesiapan. Cocok untuk presentasi.
 
 ---
@@ -28,20 +28,21 @@ progres legalitas, dan skor kesiapan. Cocok untuk presentasi.
 
 ```
 umkmku/
-├── index.html          Beranda (hero, pemilih kebutuhan, statistik)
-├── panduan.html        Panduan Usaha  4 langkah awal
-├── catat.html          Catat Uang (BUTUH LOGIN)  tambah/hapus/ringkasan/CSV
-├── layanan.html        Urus Izin  checklist NIB, Halal, PIRT, Merek
-├── cek.html            Cek Kesiapan  kuis 5 pertanyaan + gauge skor
-├── belajar.html        Belajar  materi bertingkat (Dasar/Menengah/Siap UMKM) + video YouTube
-├── berita.html         Berita  kurasi berita resmi oss.go.id dengan tautan langsung
+├── dashboard.html      Dashboard (BUTUH LOGIN) — metrik, grafik 7 hari, akuntansi harian, PDF
+├── index.html          Beranda (hero, pemilih kebutuhan, berita OSS, statistik)
+├── panduan.html        Panduan Usaha — 4 langkah awal
+├── catat.html          Catat Uang (BUTUH LOGIN) — tambah/hapus/ringkasan/CSV
+├── layanan.html        Urus Izin — checklist NIB, Halal, PIRT, Merek
+├── cek.html            Cek Kesiapan — kuis 5 pertanyaan + gauge skor
+├── belajar.html        Belajar — materi bertingkat (Dasar/Menengah/Siap UMKM) + video YouTube
+├── berita.html         Berita — kurasi berita resmi oss.go.id dengan tautan langsung
 ├── masuk.html          Masuk/Daftar dummy (nama + no HP) + akun demo
 ├── bantuan.html        FAQ
 │
 ├── css/
 │   └── style.css       Semua gaya bersama (palet plum–gold ala UniSQ)
 ├── js/
-│   └── app.js          Header/footer/navigasi/animasi bersama  App.boot()
+│   └── app.js          Header/footer/navigasi/animasi bersama — App.boot()
 ├── backend/            ★ BACKEND DUMMY ★
 │   ├── db.js           "Database": adapter penyimpanan per-akun (localStorage)
 │   ├── seed.js         Data awal: akun demo + katalog materi
@@ -62,7 +63,7 @@ Halaman (catat.html, layanan.html, ...)
         │  hanya memanggil Api.*
         ▼
 backend/api.js        REST-like: Api.transaksi.add(), Api.legalitas.toggle(),
-        │             Api.kesiapan.save(), Api.materi.list()  semua async (Promise)
+        │             Api.kesiapan.save(), Api.materi.list() — semua async (Promise)
         ▼
 backend/db.js         "tabel" per akun: read/insert/update/remove + nilai tunggal
         ▼
@@ -72,12 +73,12 @@ localStorage          penyimpanan hari ini (mudah diganti fetch() ke server)
 - **Multi-akun:** data diberi prefix per ID pengguna (`umkmku_v1_<userId>_...`),
   sehingga akun berbeda punya catatan yang terpisah.
 - **Auth.guard()** di `catat.html` mengalihkan ke `masuk.html?lanjut=catat.html`
-  bila belum masuk  pola yang sama seperti proteksi rute di backend asli.
+  bila belum masuk — pola yang sama seperti proteksi rute di backend asli.
 - **Seed** hanya berjalan sekali (flag `umkmku_v1_seeded`).
 
 ### Migrasi ke backend sungguhan (nanti)
 
-Ganti isi fungsi di `backend/api.js` menjadi `fetch()` ke server/Supabase/Firebase 
+Ganti isi fungsi di `backend/api.js` menjadi `fetch()` ke server/Supabase/Firebase —
 **tidak ada satu pun halaman yang perlu diubah.** Contoh:
 
 ```js
@@ -97,6 +98,8 @@ Untuk login sungguhan: ganti `Auth.masuk()` dengan verifikasi OTP WhatsApp + tok
 
 | Fitur | Halaman | Backend dummy yang dipakai |
 |---|---|---|
+| Akuntansi harian (rekap per tanggal + rincian) & unduh laporan PDF | `dashboard.html` | `Api.transaksi` + jsPDF |
+| Dashboard hidup: metrik, grafik, streak, legalitas | `dashboard.html` | `Api.transaksi` + `Api.legalitas` |
 | Tambah/hapus catatan, ringkasan untung | `catat.html` | `Api.transaksi` |
 | Unduh catatan sebagai CSV | `catat.html` | `Api.transaksi.list` |
 | Checklist legalitas + progress bar | `layanan.html` | `Api.legalitas` |
@@ -108,8 +111,8 @@ Untuk login sungguhan: ganti `Auth.masuk()` dengan verifikasi OTP WhatsApp + tok
 
 ## 5. Batasan Versi Dummy (jujur)
 
-- Data tersimpan **di browser perangkat itu saja**  pindah HP/browser berarti mulai kosong.
+- Data tersimpan **di browser perangkat itu saja** — pindah HP/browser berarti mulai kosong.
 - Login tanpa kata sandi hanya untuk demo; **belum aman** untuk produksi.
-- Konten materi & syarat legalitas adalah ringkasan edukatif  selalu rujuk situs resmi.
+- Konten materi & syarat legalitas adalah ringkasan edukatif — selalu rujuk situs resmi.
 
-© 2026 UMKM KU  prototipe untuk pelaku UMKM Indonesia. Bukan situs pemerintah.
+© 2026 UMKM KU — prototipe untuk pelaku UMKM Indonesia. Bukan situs pemerintah.

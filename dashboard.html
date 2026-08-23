@@ -38,6 +38,10 @@
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
 
+<!-- jsPDF + AutoTable: generator PDF laporan keuangan (di-guard bila CDN gagal/offline) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js" defer></script>
+
 <style>
   /* ---------- Kustom minimal di luar Tailwind ---------- */
   .bar { transition: height .7s cubic-bezier(.22,.9,.3,1); }               /* Bar chart: animasi tinggi */
@@ -259,6 +263,41 @@
             <tbody id="txBody" class="divide-y divide-plum-50"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Akuntansi Harian: rekap hari per hari + unduh laporan PDF -->
+      <div class="bg-white border border-plum-100 rounded-2xl shadow-card overflow-hidden">
+        <div class="flex flex-wrap items-center gap-3 p-5 md:p-6 pb-4">
+          <div>
+            <h2 class="font-extrabold text-plum-900 flex items-center gap-2">
+              <i data-lucide="book-open-check" class="w-5 h-5 text-gold-600"></i> Akuntansi Harian
+            </h2>
+            <p class="text-xs text-plum-700/70">Rekap hari per hari: pemasukan, pengeluaran, dan laba/rugi.</p>
+          </div>
+          <div class="ml-auto flex items-center gap-2">
+            <select id="lapBulan" class="h-10 rounded-xl border-2 border-plum-100 px-3 text-sm font-bold text-plum-900 bg-white outline-none focus:border-gold-500" aria-label="Pilih bulan laporan"></select>
+            <button id="btnPdf" class="inline-flex items-center gap-2 bg-gold-500 hover:bg-gold-300 text-plum-950 font-bold rounded-xl px-4 h-10 text-sm transition">
+              <i data-lucide="file-down" class="w-4 h-4"></i> Unduh PDF
+            </button>
+          </div>
+        </div>
+        <!-- Tabel rekap harian (klik tanggal untuk rincian transaksi) -->
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[620px] text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-plum-700/60 border-y border-plum-50 bg-plum-50/50">
+                <th class="font-bold px-5 md:px-6 py-3">Tanggal</th>
+                <th class="font-bold px-4 py-3 text-right">Pemasukan</th>
+                <th class="font-bold px-4 py-3 text-right">Pengeluaran</th>
+                <th class="font-bold px-4 py-3 text-right">Laba/Rugi</th>
+                <th class="font-bold px-5 md:px-6 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="lapBody" class="divide-y divide-plum-50"></tbody>
+            <tfoot id="lapFoot"></tfoot>
+          </table>
+        </div>
+        <p class="text-xs text-plum-700/70 px-5 md:px-6 py-4 border-t border-plum-50">Klik tanggal untuk melihat rincian transaksi hari itu. PDF memuat ringkasan + tabel harian untuk periode yang dipilih.</p>
       </div>
     </div>
 
@@ -588,14 +627,226 @@
     if (window.lucide) lucide.createIcons(); /* ikon baru di tabel perlu dirender ulang */
   }
 
+  /* ====================================================================
+     AKUNTANSI HARIAN + LAPORAN PDF
+     ==================================================================== */
+  let lastRows = [];                       // cache transaksi terakhir dimuat
+  let lapBulan = thisMonth;                // bulan laporan terpilih (YYYY-MM)
+
+  /* Kelompokkan transaksi per tanggal untuk satu bulan */
+  function groupsHarian(rows, monthKey) {
+    const map = new Map();
+    rows.filter(r => dkey(new Date(r.at)).slice(0, 7) === monthKey).forEach(r => {
+      const k = dkey(new Date(r.at));
+      if (!map.has(k)) map.set(k, { key: k, masuk: 0, keluar: 0, items: [] });
+      const g = map.get(k);
+      g[r.jenis === "masuk" ? "masuk" : "keluar"] += r.jumlah;
+      g.items.push(r);
+    });
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? 1 : -1)); // terbaru di atas
+  }
+
+  function labelTanggal(key) {
+    return new Date(key + "T12:00:00").toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  /* Isi dropdown bulan dari bulan-bulan yang punya data (+ bulan ini) */
+  function buildMonthOptions(rows) {
+    const set = new Set([thisMonth]);
+    rows.forEach(r => set.add(dkey(new Date(r.at)).slice(0, 7)));
+    const opts = Array.from(set).sort().reverse();
+    $("#lapBulan").innerHTML = opts.map(k => {
+      const [y, m] = k.split("-");
+      const label = new Date(+y, +m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+      return '<option value="' + k + '"' + (k === lapBulan ? " selected" : "") + ">" + label + "</option>";
+    }).join("");
+  }
+
+  /* Render tabel rekap harian + baris total */
+  function renderLaporan(rows) {
+    const groups = groupsHarian(rows, lapBulan);
+    const tbody = $("#lapBody"), tfoot = $("#lapFoot");
+    if (!groups.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-plum-700/70">Belum ada catatan pada bulan ini.</td></tr>';
+      tfoot.innerHTML = "";
+      return;
+    }
+    let TM = 0, TK = 0;
+    tbody.innerHTML = groups.map(g => {
+      TM += g.masuk; TK += g.keluar;
+      const laba = g.masuk - g.keluar;
+      const untung = laba >= 0;
+      const detail = g.items.map(t => {
+        const masuk = t.jenis === "masuk";
+        return '<div class="flex items-center gap-3 py-2 border-b border-plum-50">' +
+          '<span class="text-xs text-plum-700/60 w-14 flex-none">' + new Date(t.at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + "</span>" +
+          '<span class="flex-1 min-w-0 text-sm font-semibold text-plum-900 truncate">' + (t.catatan || (masuk ? "Uang masuk" : "Uang keluar")).replace(/</g, "&lt;") + "</span>" +
+          '<span class="text-sm font-extrabold whitespace-nowrap ' + (masuk ? "text-sem-in" : "text-sem-out") + '">' + (masuk ? "+" : "−") + rp(t.jumlah) + "</span>" +
+          "</div>";
+      }).join("");
+      return (
+        '<tr class="hover:bg-plum-50/60 transition cursor-pointer lap-day" data-k="' + g.key + '">' +
+          '<td class="px-5 md:px-6 py-3.5 whitespace-nowrap font-semibold text-plum-900">' +
+            '<span class="inline-flex items-center gap-1.5"><i data-lucide="chevron-down" class="w-4 h-4 text-gold-600 transition-transform" data-chev></i>' + labelTanggal(g.key) + "</span></td>" +
+          '<td class="px-4 py-3.5 text-right font-extrabold text-sem-in whitespace-nowrap">+ ' + rp(g.masuk) + "</td>" +
+          '<td class="px-4 py-3.5 text-right font-extrabold text-sem-out whitespace-nowrap">− ' + rp(g.keluar) + "</td>" +
+          '<td class="px-4 py-3.5 text-right font-extrabold whitespace-nowrap ' + (untung ? "text-sem-in" : "text-sem-out") + '">' + (untung ? "+" : "−") + rp(Math.abs(laba)) + "</td>" +
+          '<td class="px-5 md:px-6 py-3.5"><span class="text-xs font-extrabold rounded-full px-2.5 py-1 ' + (untung ? "bg-sem-inSoft text-sem-in" : "bg-sem-outSoft text-sem-out") + '">' + (untung ? "Untung" : "Rugi") + "</span></td>" +
+        "</tr>" +
+        '<tr class="hidden" data-detail="' + g.key + '"><td colspan="5" class="px-5 md:px-6 py-3 bg-plum-50/60">' + detail + "</td></tr>"
+      );
+    }).join("");
+    /* Baris total periode */
+    const net = TM - TK;
+    tfoot.innerHTML =
+      '<tr class="border-t-2 border-plum-100 bg-plum-50/60">' +
+        '<td class="px-5 md:px-6 py-3.5 font-extrabold text-plum-900 uppercase text-xs tracking-wide">Total periode</td>' +
+        '<td class="px-4 py-3.5 text-right font-extrabold text-sem-in whitespace-nowrap">+ ' + rp(TM) + "</td>" +
+        '<td class="px-4 py-3.5 text-right font-extrabold text-sem-out whitespace-nowrap">− ' + rp(TK) + "</td>" +
+        '<td class="px-4 py-3.5 text-right font-extrabold whitespace-nowrap ' + (net >= 0 ? "text-sem-in" : "text-sem-out") + '">' + (net >= 0 ? "+" : "−") + rp(Math.abs(net)) + "</td>" +
+        '<td class="px-5 md:px-6 py-3.5"><span class="text-xs font-extrabold rounded-full px-2.5 py-1 ' + (net >= 0 ? "bg-sem-inSoft text-sem-in" : "bg-sem-outSoft text-sem-out") + '">' + (net >= 0 ? "Untung Bersih" : "Rugi Bersih") + "</span></td>" +
+      "</tr>";
+    /* Klik tanggal = buka/tutup rincian hari itu */
+    tbody.querySelectorAll(".lap-day").forEach(row => {
+      row.addEventListener("click", () => {
+        const det = tbody.querySelector('[data-detail="' + row.dataset.k + '"]');
+        det.classList.toggle("hidden");
+        const chev = row.querySelector("[data-chev]");
+        if (chev) chev.style.transform = det.classList.contains("hidden") ? "" : "rotate(180deg)";
+      });
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  /* ---------- Susun konten laporan (dipakai PDF & fallback cetak) ---------- */
+  function laporanData() {
+    const groups = groupsHarian(lastRows, lapBulan);
+    const TM = groups.reduce((s, g) => s + g.masuk, 0);
+    const TK = groups.reduce((s, g) => s + g.keluar, 0);
+    const [y, m] = lapBulan.split("-");
+    const periode = new Date(+y, +m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    return { groups, TM, TK, net: TM - TK, periode };
+  }
+
+  /* ---------- Generator PDF via jsPDF ---------- */
+  function unduhPDF() {
+    const { groups, TM, TK, net, periode } = laporanData();
+    if (!groups.length) { toast("Belum ada data pada periode ini."); return; }
+
+    if (window.jspdf && window.jspdf.jsPDF) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+      /* Kop surat: pita plum + brand emas */
+      doc.setFillColor(59, 31, 62); doc.rect(0, 0, 210, 30, "F");
+      doc.setTextColor(242, 169, 59); doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.text("UMKM KU", 14, 13);
+      doc.setTextColor(255, 255, 255); doc.setFontSize(11.5); doc.setFont("helvetica", "normal");
+      doc.text("Laporan Keuangan Harian", 14, 21.5);
+      doc.setFontSize(8.5); doc.setTextColor(199, 156, 192);
+      doc.text("Dicetak: " + now.toLocaleString("id-ID"), 196, 21.5, { align: "right" });
+
+      /* Identitas laporan */
+      doc.setTextColor(51, 23, 43); doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text(USER.usaha || "Usaha Saya", 14, 41);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9.5); doc.setTextColor(110, 90, 103);
+      doc.text("Pemilik: " + USER.nama + "    Periode: " + periode + " (" + lapBulan + ")", 14, 47.5);
+
+      /* 3 kotak ringkasan */
+      const boxes = [
+        ["TOTAL PEMASUKAN", "Rp " + TM.toLocaleString("id-ID"), [232, 242, 234], [47, 125, 91]],
+        ["TOTAL PENGELUARAN", "Rp " + TK.toLocaleString("id-ID"), [250, 234, 226], [200, 90, 54]],
+        [net >= 0 ? "UNTUNG BERSIH" : "RUGI BERSIH", "Rp " + Math.abs(net).toLocaleString("id-ID"), [252, 239, 206], [37, 12, 35]]
+      ];
+      boxes.forEach((b, i) => {
+        const x = 14 + i * 61.5;
+        doc.setFillColor(...b[2]); doc.roundedRect(x, 54, 58.5, 21, 2, 2, "F");
+        doc.setFontSize(7.5); doc.setTextColor(110, 90, 103); doc.setFont("helvetica", "bold");
+        doc.text(b[0], x + 4, 61);
+        doc.setFontSize(13); doc.setTextColor(...b[3]);
+        doc.text(b[1], x + 4, 69.5);
+      });
+
+      /* Tabel harian + total */
+      doc.autoTable({
+        startY: 82,
+        head: [["Tanggal", "Pemasukan", "Pengeluaran", "Laba/Rugi", "Status"]],
+        body: groups.map(g => {
+          const laba = g.masuk - g.keluar;
+          return [labelTanggal(g.key), "Rp " + g.masuk.toLocaleString("id-ID"), "Rp " + g.keluar.toLocaleString("id-ID"),
+                  (laba >= 0 ? "+" : "-") + " Rp " + Math.abs(laba).toLocaleString("id-ID"), laba >= 0 ? "Untung" : "Rugi"];
+        }),
+        foot: [["TOTAL " + periode.toUpperCase(), "Rp " + TM.toLocaleString("id-ID"), "Rp " + TK.toLocaleString("id-ID"),
+                (net >= 0 ? "+" : "-") + " Rp " + Math.abs(net).toLocaleString("id-ID"), net >= 0 ? "UNTUNG" : "RUGI"]],
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 9.5, cellPadding: 2.6, textColor: [51, 23, 43] },
+        headStyles: { fillColor: [59, 31, 62], textColor: [255, 255, 255], fontStyle: "bold" },
+        footStyles: { fillColor: [252, 239, 206], textColor: [37, 12, 35], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [255, 248, 239] },
+        columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "center" } }
+      });
+
+      /* Catatan kaki */
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(8); doc.setTextColor(150, 130, 145); doc.setFont("helvetica", "normal");
+      doc.text("Dihasilkan otomatis oleh prototipe UMKM KU (backend dummy di perangkat ini). Bukan dokumen resmi perpajakan.", 14, pageH - 10);
+
+      doc.save("laporan-keuangan-" + lapBulan + ".pdf");
+      toast("Laporan PDF periode " + periode + " diunduh!");
+    } else {
+      /* Fallback: jsPDF tidak termuat (offline) -> buka versi cetak (bisa Simpan sebagai PDF) */
+      printFallback(groups, TM, TK, net, periode);
+    }
+  }
+
+  /* ---------- Fallback cetak (bila CDN jsPDF gagal termuat) ---------- */
+  function printFallback(groups, TM, TK, net, periode) {
+    const w = window.open("", "_blank");
+    if (!w) { toast("Popup diblokir — izinkan popup untuk mencetak laporan."); return; }
+    const rowsHtml = groups.map(g => {
+      const laba = g.masuk - g.keluar;
+      return "<tr><td>" + labelTanggal(g.key) + "</td><td class='r'>Rp " + g.masuk.toLocaleString("id-ID") +
+             "</td><td class='r'>Rp " + g.keluar.toLocaleString("id-ID") + "</td><td class='r'>" +
+             (laba >= 0 ? "+" : "-") + " Rp " + Math.abs(laba).toLocaleString("id-ID") + "</td><td>" +
+             (laba >= 0 ? "Untung" : "Rugi") + "</td></tr>";
+    }).join("");
+    w.document.write(
+      "<!DOCTYPE html><html lang='id'><head><meta charset='utf-8'><title>Laporan Keuangan " + periode + " — UMKM KU</title>" +
+      "<style>body{font-family:Arial,sans-serif;color:#33172B;padding:32px;max-width:800px;margin:auto}" +
+      ".kop{background:#3B1F3E;color:#fff;padding:20px 24px;border-radius:12px}.kop b{color:#F2A93B;font-size:22px}" +
+      ".ringkas{display:flex;gap:12px;margin:18px 0}.kotak{flex:1;border-radius:10px;padding:12px 14px;font-size:13px}" +
+      ".kotak b{display:block;font-size:18px;margin-top:4px}table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}" +
+      "th{background:#3B1F3E;color:#fff;text-align:left;padding:8px 10px}td{padding:8px 10px;border-bottom:1px solid #F0E2D2}" +
+      ".r{text-align:right}tfoot td{background:#FCEFCE;font-weight:800}.mut{color:#7A6070;font-size:12px;margin-top:16px}</style></head><body>" +
+      "<div class='kop'><b>UMKM KU</b><br>Laporan Keuangan Harian<div style='font-size:12px;color:#C79CC0;margin-top:4px'>Dicetak: " + now.toLocaleString("id-ID") + "</div></div>" +
+      "<h2 style='margin:18px 0 2px'>" + (USER.usaha || "Usaha Saya") + "</h2>" +
+      "<div style='color:#7A6070;font-size:13px'>Pemilik: " + USER.nama + " &nbsp;·&nbsp; Periode: " + periode + " (" + lapBulan + ")</div>" +
+      "<div class='ringkas'>" +
+      "<div class='kotak' style='background:#E8F2EA'>TOTAL PEMASUKAN<b style='color:#2F7D5B'>Rp " + TM.toLocaleString("id-ID") + "</b></div>" +
+      "<div class='kotak' style='background:#FAEAE2'>TOTAL PENGELUARAN<b style='color:#C85A36'>Rp " + TK.toLocaleString("id-ID") + "</b></div>" +
+      "<div class='kotak' style='background:#FCEFCE'>" + (net >= 0 ? "UNTUNG BERSIH" : "RUGI BERSIH") + "<b>Rp " + Math.abs(net).toLocaleString("id-ID") + "</b></div></div>" +
+      "<table><thead><tr><th>Tanggal</th><th class='r'>Pemasukan</th><th class='r'>Pengeluaran</th><th class='r'>Laba/Rugi</th><th>Status</th></tr></thead>" +
+      "<tbody>" + rowsHtml + "</tbody>" +
+      "<tfoot><tr><td>TOTAL " + periode.toUpperCase() + "</td><td class='r'>Rp " + TM.toLocaleString("id-ID") + "</td><td class='r'>Rp " + TK.toLocaleString("id-ID") +
+      "</td><td class='r'>" + (net >= 0 ? "+" : "-") + " Rp " + Math.abs(net).toLocaleString("id-ID") + "</td><td>" + (net >= 0 ? "UNTUNG" : "RUGI") + "</td></tr></tfoot></table>" +
+      "<p class='mut'>Dihasilkan otomatis oleh prototipe UMKM KU (backend dummy di perangkat ini). Bukan dokumen resmi perpajakan.</p>" +
+      "<scr" + "ipt>window.onload=function(){window.print();}<\/scr" + "ipt></body></html>"
+    );
+    w.document.close();
+    toast("Membuka versi cetak — pilih 'Simpan sebagai PDF'.");
+  }
+
   /* ---------- Muat semua data dari backend dummy ---------- */
   async function muat() {
     const [rows, legal] = await Promise.all([Api.transaksi.list(), Api.legalitas.get()]);
+    lastRows = rows;
     renderMetrics(rows);
     renderChart(rows);
     renderStreak(rows);
     renderTable(rows);
     renderLegal(legal);
+    buildMonthOptions(rows);
+    renderLaporan(rows);
   }
 
   /* ---------- Toast ---------- */
@@ -679,6 +930,13 @@
     closeModal();
     toast("Catatan " + (tipeTx === "masuk" ? "pemasukan" : "pengeluaran") + " " + rp(jml) + " tersimpan!");
   });
+
+  /* ---------- Akuntansi harian: ganti bulan & unduh PDF ---------- */
+  $("#lapBulan").addEventListener("change", function () {
+    lapBulan = this.value;
+    renderLaporan(lastRows);
+  });
+  $("#btnPdf").addEventListener("click", unduhPDF);
 
   /* ---------- Muat awal + ikon ---------- */
   muat();
