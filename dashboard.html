@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — UMKM KU</title>
+<meta name="description" content="Dashboard UMKM KU: ringkasan keuangan, legalitas, dan langkah berikutnya untuk pelaku usaha mikro, kecil, dan menengah Indonesia.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233B1F3E'/%3E%3Cpath d='M32 50V34' stroke='%23F2A93B' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M32 40c0-9-6-12-14-12 0 9 6 12 14 12z' fill='%23F2A93B'/%3E%3Cpath d='M32 30c0-8 5-11 12-11 0 8-5 11-12 11z' fill='%23F8CE7A'/%3E%3C/svg%3E">
+
+<!-- Font brand: Plus Jakarta Sans (dengan fallback sistem) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS v3 (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  /* Konfigurasi warna brand UMKM KU (plum–gold) untuk Tailwind.
+     Dijaga agar tidak error bila CDN gagal dimuat (mis. offline). */
+  if (window.tailwind) {
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            plum: { 50:"#FBF4F8", 100:"#F4E9F2", 300:"#C79CC0", 700:"#5B2A52", 800:"#4A2647", 900:"#3B1F3E", 950:"#250C23" },
+            gold: { 100:"#FCEFCE", 300:"#F8CE7A", 500:"#F2A93B", 600:"#D98E1B" },
+            cream: "#FFF8EF",
+            sem:  { in:"#2F7D5B", inSoft:"#E5F2EA", out:"#C85A36", outSoft:"#FAEAE2" }
+          },
+          fontFamily: { sans: ['"Plus Jakarta Sans"', "ui-sans-serif", "system-ui", "sans-serif"] },
+          boxShadow: { card: "0 1px 2px rgba(59,31,62,.06), 0 8px 24px rgba(59,31,62,.07)" }
+        }
+      }
+    };
+  }
+</script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+
+<style>
+  /* ---------- Kustom minimal di luar Tailwind ---------- */
+  .bar { transition: height .7s cubic-bezier(.22,.9,.3,1); }               /* Bar chart: animasi tinggi */
+  .toast { opacity: 0; transform: translate(-50%, 12px); pointer-events: none;
+           transition: opacity .25s ease, transform .25s ease; }              /* Toast notifikasi */
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .modal-panel { transition: transform .18s ease, opacity .18s ease; }        /* Modal: transisi halus */
+  .prog { transition: width .6s ease; }                                       /* Progress bar widget */
+</style>
+</head>
+
+<body class="bg-cream text-plum-950 font-sans antialiased min-h-screen flex flex-col">
+
+<!-- ================================================================
+     1. HEADER / NAVIGATION BAR
+================================================================ -->
+<header class="sticky top-0 z-40 bg-cream/90 backdrop-blur border-b border-plum-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center gap-3 h-16">
+
+      <!-- Logo / Brand -->
+      <a href="index.html" class="flex items-center gap-2.5 select-none">
+        <span class="w-9 h-9 rounded-xl bg-plum-900 grid place-items-center">
+          <i data-lucide="sprout" class="w-5 h-5 text-gold-500"></i>
+        </span>
+        <span class="font-extrabold text-lg tracking-tight text-plum-900">UMKM <span class="text-gold-600">KU</span></span>
+        <span class="hidden md:inline-flex text-[11px] font-bold bg-gold-100 text-gold-600 border border-gold-300 rounded-full px-2 py-0.5 ml-1">Dashboard</span>
+      </a>
+
+      <!-- Menu navigasi (desktop) — terhubung ke halaman asli situs -->
+      <nav class="hidden lg:flex items-center gap-1 ml-4" aria-label="Navigasi utama">
+        <a href="panduan.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Panduan</a>
+        <a href="catat.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Catat Uang</a>
+        <a href="layanan.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Urus Izin</a>
+        <a href="belajar.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Belajar</a>
+        <a href="berita.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Berita</a>
+        <a href="bantuan.html" class="px-3 py-2 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100 transition">Bantuan</a>
+      </nav>
+
+      <!-- Area profil pengguna (dropdown) — nama & usaha dari akun yang masuk -->
+      <div class="relative ml-auto" id="profileWrap">
+        <button id="profileBtn" class="flex items-center gap-2.5 rounded-full border border-plum-100 bg-white pl-1.5 pr-3 py-1.5 hover:border-gold-500 transition" aria-haspopup="menu" aria-expanded="false">
+          <span class="w-8 h-8 rounded-full bg-gold-500 text-plum-950 grid place-items-center font-extrabold text-sm" id="avatarInit">·</span>
+          <span class="hidden sm:block text-left">
+            <span class="block text-sm font-bold leading-tight text-plum-900" id="profileName">…</span>
+            <span class="block text-xs text-plum-700/70 leading-tight" id="profileUsaha">…</span>
+          </span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-plum-700"></i>
+        </button>
+        <!-- Isi dropdown profil -->
+        <div id="profileMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl border border-plum-100 shadow-card p-1.5 z-50" role="menu">
+          <div class="px-3 py-2.5 border-b border-plum-50 mb-1">
+            <p class="text-sm font-bold text-plum-900" id="ddName">…</p>
+            <p class="text-xs text-plum-700/70" id="ddUsaha">…</p>
+          </div>
+          <a href="index.html" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-plum-800 hover:bg-plum-100" role="menuitem">
+            <i data-lucide="home" class="w-4 h-4"></i> Beranda
+          </a>
+          <button id="btnKeluar" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-semibold text-sem-out hover:bg-sem-outSoft" role="menuitem">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tombol hamburger (mobile) -->
+      <button id="menuBtn" class="lg:hidden -mr-1 w-10 h-10 grid place-items-center rounded-lg text-plum-900 hover:bg-plum-100" aria-label="Buka menu" aria-expanded="false">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Menu navigasi (mobile, bisa dibuka-tutup) -->
+  <nav id="mobileMenu" class="hidden lg:hidden border-t border-plum-100 bg-cream px-4 py-2" aria-label="Navigasi mobile">
+    <a href="panduan.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="book-open" class="w-5 h-5 text-gold-600"></i>Panduan</a>
+    <a href="catat.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="wallet" class="w-5 h-5 text-gold-600"></i>Catat Uang</a>
+    <a href="layanan.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="clipboard-check" class="w-5 h-5 text-gold-600"></i>Urus Izin</a>
+    <a href="belajar.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="graduation-cap" class="w-5 h-5 text-gold-600"></i>Belajar</a>
+    <a href="berita.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="newspaper" class="w-5 h-5 text-gold-600"></i>Berita</a>
+    <a href="bantuan.html" class="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-plum-800 hover:bg-plum-100"><i data-lucide="help-circle" class="w-5 h-5 text-gold-600"></i>Bantuan</a>
+  </nav>
+</header>
+
+<main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8 space-y-6 md:space-y-8">
+
+  <!-- ================================================================
+       2. WELCOME BANNER (Kartu Sapaan Pengguna)
+  ================================================================ -->
+  <section class="relative overflow-hidden rounded-2xl text-white p-6 md:p-8"
+           style="background:linear-gradient(135deg,#3B1F3E 20%,#5B2A52)">
+    <!-- Ornamen cahaya emas -->
+    <span aria-hidden="true" class="absolute -top-24 -right-16 w-72 h-72 rounded-full" style="background:radial-gradient(circle,rgba(242,169,59,.35),transparent 70%)"></span>
+    <span aria-hidden="true" class="absolute -bottom-20 -left-12 w-56 h-56 rounded-full" style="background:radial-gradient(circle,rgba(242,169,59,.18),transparent 70%)"></span>
+
+    <div class="relative flex flex-col md:flex-row md:items-end gap-6">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight" id="greet">Selamat datang kembali! 👋</h1>
+        <p class="mt-2 text-plum-300 max-w-xl text-sm md:text-base leading-relaxed" id="greetSub">
+          Ringkasan singkat performa usaha Anda bulan ini — semua angka diambil dari catatan yang Anda simpan.
+        </p>
+        <p class="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-gold-300">
+          <i data-lucide="calendar-days" class="w-4 h-4"></i><span id="todayLabel">Hari ini</span>
+        </p>
+      </div>
+      <!-- Tombol aksi cepat -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button id="btnCatatBaru" class="inline-flex items-center justify-center gap-2 bg-gold-500 hover:bg-gold-300 text-plum-950 font-bold rounded-xl px-5 py-3.5 text-sm shadow transition">
+          <i data-lucide="plus-circle" class="w-5 h-5"></i> Catat Transaksi Baru
+        </button>
+        <a href="layanan.html" class="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-xl px-5 py-3.5 text-sm transition">
+          <i data-lucide="badge-check" class="w-5 h-5"></i> Urus Legalitas NIB/Halal
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       3. METRIC CARDS (4 Ringkasan Utama) — angka dari backend dummy
+  ================================================================ -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Ringkasan utama">
+
+    <!-- Kartu: Total Uang Masuk -->
+    <div class="bg-white border border-plum-100 rounded-2xl p-5 shadow-card">
+      <div class="flex items-start justify-between">
+        <span class="w-10 h-10 rounded-xl bg-sem-inSoft text-sem-in grid place-items-center"><i data-lucide="trending-up" class="w-5 h-5"></i></span>
+        <span class="text-xs font-bold text-sem-in bg-sem-inSoft rounded-full px-2 py-1" id="chipMonth1">Bulan ini</span>
+      </div>
+      <p class="mt-4 text-xs font-bold text-plum-700/70 uppercase tracking-wide">Total Uang Masuk</p>
+      <p class="text-2xl font-extrabold text-plum-900 mt-0.5" id="mMasuk">…</p>
+      <p class="text-xs text-plum-700/70 mt-1">Penjualan bulan ini</p>
+    </div>
+
+    <!-- Kartu: Total Uang Keluar -->
+    <div class="bg-white border border-plum-100 rounded-2xl p-5 shadow-card">
+      <div class="flex items-start justify-between">
+        <span class="w-10 h-10 rounded-xl bg-sem-outSoft text-sem-out grid place-items-center"><i data-lucide="trending-down" class="w-5 h-5"></i></span>
+        <span class="text-xs font-bold text-plum-700/70 bg-plum-50 rounded-full px-2 py-1">Modal &amp; operasional</span>
+      </div>
+      <p class="mt-4 text-xs font-bold text-plum-700/70 uppercase tracking-wide">Total Uang Keluar</p>
+      <p class="text-2xl font-extrabold text-plum-900 mt-0.5" id="mKeluar">…</p>
+      <p class="text-xs text-plum-700/70 mt-1">Bahan, gas, listrik, transport</p>
+    </div>
+
+    <!-- Kartu: Estimasi Untung Bersih -->
+    <div class="bg-plum-900 border border-plum-900 rounded-2xl p-5 shadow-card text-white">
+      <div class="flex items-start justify-between">
+        <span class="w-10 h-10 rounded-xl bg-white/10 text-gold-500 grid place-items-center"><i data-lucide="piggy-bank" class="w-5 h-5"></i></span>
+        <span class="text-xs font-bold text-gold-300 bg-white/10 rounded-full px-2 py-1">Masuk − Keluar</span>
+      </div>
+      <p class="mt-4 text-xs font-bold text-plum-300 uppercase tracking-wide">Estimasi Untung Bersih</p>
+      <p class="text-2xl font-extrabold text-gold-500 mt-0.5" id="mUntung">…</p>
+      <p class="text-xs text-plum-300 mt-1">Bulan ini, setelah semua biaya</p>
+    </div>
+
+    <!-- Kartu: Status Legalitas Usaha -->
+    <div class="bg-white border border-plum-100 rounded-2xl p-5 shadow-card">
+      <div class="flex items-start justify-between">
+        <span class="w-10 h-10 rounded-xl bg-gold-100 text-gold-600 grid place-items-center"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+        <span class="text-xs font-bold text-gold-600 bg-gold-100 rounded-full px-2 py-1" id="legalCount">—</span>
+      </div>
+      <p class="mt-4 text-xs font-bold text-plum-700/70 uppercase tracking-wide">Status Legalitas Usaha</p>
+      <p class="text-2xl font-extrabold text-plum-900 mt-0.5" id="legalValue">…</p>
+      <!-- Rincian status per izin (dari checklist Urus Izin) -->
+      <div class="mt-2 flex flex-wrap gap-1.5" id="legalChips"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       4. AREA UTAMA (Grid 2 kolom)
+  ================================================================ -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- -------------------- KOLOM KIRI (utama) -------------------- -->
+    <div class="lg:col-span-2 space-y-6">
+
+      <!-- Visual Grafik Sederhana: Masuk vs Keluar, 7 hari terakhir -->
+      <div class="bg-white border border-plum-100 rounded-2xl p-5 md:p-6 shadow-card">
+        <div class="flex flex-wrap items-center gap-3 mb-5">
+          <div>
+            <h2 class="font-extrabold text-plum-900">Uang Masuk vs Uang Keluar</h2>
+            <p class="text-xs text-plum-700/70">7 hari terakhir · <span id="chartUsaha">usaha Anda</span></p>
+          </div>
+          <!-- Legenda -->
+          <div class="ml-auto flex items-center gap-4 text-xs font-semibold text-plum-700/80">
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-gold-500"></span>Masuk</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-plum-300"></span>Keluar</span>
+          </div>
+        </div>
+        <!-- Bar chart CSS murni (ringan, tanpa library) — tinggi diisi via JS -->
+        <div class="flex items-end gap-2 sm:gap-3" id="chartBars" role="img"
+             aria-label="Grafik batang perbandingan uang masuk dan keluar 7 hari terakhir"></div>
+        <!-- Garis nol + label hari -->
+        <div class="border-t border-plum-100 mt-0 pt-2 flex gap-2 sm:gap-3" id="chartLabels"></div>
+        <p class="hidden text-xs text-plum-700/70 mt-3" id="chartEmpty">Belum ada catatan minggu ini — mulai dari tombol <b>+ Catat Transaksi Baru</b> di atas.</p>
+      </div>
+
+      <!-- Tabel Transaksi Terakhir -->
+      <div class="bg-white border border-plum-100 rounded-2xl shadow-card overflow-hidden">
+        <div class="flex flex-wrap items-center gap-3 p-5 md:p-6 pb-4">
+          <div>
+            <h2 class="font-extrabold text-plum-900">Transaksi Terakhir</h2>
+            <p class="text-xs text-plum-700/70">5 catatan keuangan terbaru Anda</p>
+          </div>
+          <a href="catat.html" class="ml-auto inline-flex items-center gap-1.5 text-sm font-bold text-gold-600 hover:underline">
+            Lihat Semua Catatan <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </a>
+        </div>
+        <!-- Wrapper scroll horizontal agar tabel tetap rapi di HP -->
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr class="text-left text-xs uppercase tracking-wide text-plum-700/60 border-y border-plum-50 bg-plum-50/50">
+                <th class="font-bold px-5 md:px-6 py-3">Tanggal</th>
+                <th class="font-bold px-4 py-3">Keterangan</th>
+                <th class="font-bold px-4 py-3">Tipe</th>
+                <th class="font-bold px-4 py-3 text-right">Nominal</th>
+                <th class="font-bold px-5 md:px-6 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="txBody" class="divide-y divide-plum-50"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- -------------------- KOLOM KANAN (widget pendamping) -------------------- -->
+    <aside class="space-y-6">
+
+      <!-- Widget: Langkah Selanjutnya (mengikuti Panduan Usaha) -->
+      <div class="relative overflow-hidden rounded-2xl text-white p-5 md:p-6 shadow-card"
+           style="background:linear-gradient(150deg,#3B1F3E,#4A2647)">
+        <span aria-hidden="true" class="absolute -top-16 -right-12 w-48 h-48 rounded-full" style="background:radial-gradient(circle,rgba(242,169,59,.28),transparent 70%)"></span>
+        <div class="relative">
+          <p class="inline-flex items-center gap-1.5 text-xs font-extrabold tracking-wide text-gold-300 uppercase">
+            <i data-lucide="target" class="w-4 h-4"></i> Langkah Selanjutnya
+          </p>
+          <!-- Stepper progres panduan (Langkah 4 dari 4) -->
+          <div class="flex items-center gap-1.5 mt-4" aria-label="Progres panduan">
+            <span class="h-1.5 flex-1 rounded-full bg-gold-500"></span>
+            <span class="h-1.5 flex-1 rounded-full bg-gold-500"></span>
+            <span class="h-1.5 flex-1 rounded-full bg-gold-500"></span>
+            <span class="h-1.5 flex-1 rounded-full bg-white/25"></span>
+          </div>
+          <p class="mt-3 text-sm text-plum-300 font-semibold">Langkah 4 dari 4 · Panduan Usaha</p>
+          <h3 class="mt-1 font-extrabold text-lg leading-snug">Rutin catat keuangan minggu ini untuk syarat KUR</h3>
+          <!-- Mini checklist mingguan — dihitung dari hari aktif mencatat -->
+          <div class="mt-4 bg-white/10 rounded-xl p-3.5">
+            <div class="flex items-center justify-between text-xs font-semibold text-plum-300">
+              <span>Hari aktif mencatat minggu ini</span><span id="streakLabel">0/5</span>
+            </div>
+            <div class="h-2 mt-2 rounded-full bg-white/15 overflow-hidden">
+              <div class="h-full rounded-full bg-gold-500 prog" id="streakBar" style="width:0%"></div>
+            </div>
+            <p class="mt-2 text-xs text-plum-300 leading-relaxed">Catatan 3 bulan yang rapi membuat pengajuan KUR jauh lebih mudah disetujui bank.</p>
+          </div>
+          <div class="mt-4 flex flex-col gap-2">
+            <a href="panduan.html" class="inline-flex items-center justify-center gap-2 bg-gold-500 hover:bg-gold-300 text-plum-950 font-bold rounded-xl px-4 py-3 text-sm transition">
+              Buka Panduan Usaha <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+            <a href="cek.html" class="inline-flex items-center justify-center gap-2 text-gold-300 hover:text-gold-500 font-bold text-sm py-1 transition">
+              Cek Kesiapan KUR <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget: Akses Pintar / Legalitas (shortcut resmi) -->
+      <div class="bg-white border border-plum-100 rounded-2xl p-5 md:p-6 shadow-card">
+        <h2 class="font-extrabold text-plum-900 flex items-center gap-2">
+          <i data-lucide="zap" class="w-5 h-5 text-gold-600"></i> Akses Pintar Legalitas
+        </h2>
+        <p class="text-xs text-plum-700/70 mt-1 mb-4">Jalur cepat ke situs resmi pemerintah.</p>
+        <div class="space-y-2">
+          <!-- Shortcut: OSS (NIB) -->
+          <a href="https://oss.go.id" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-xl border border-plum-100 px-3.5 py-3 hover:border-gold-500 hover:bg-gold-100/40 transition group">
+            <span class="w-9 h-9 rounded-lg bg-plum-100 text-plum-800 grid place-items-center"><i data-lucide="landmark" class="w-5 h-5"></i></span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-bold text-plum-900">OSS — Urus NIB</span>
+              <span class="block text-xs text-plum-700/70 truncate">Identitas resmi usaha, gratis</span>
+            </span>
+            <i data-lucide="external-link" class="w-4 h-4 text-plum-300 group-hover:text-gold-600"></i>
+          </a>
+          <!-- Shortcut: BPJPH (Halal) -->
+          <a href="https://bpjph.halal.go.id" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-xl border border-plum-100 px-3.5 py-3 hover:border-gold-500 hover:bg-gold-100/40 transition group">
+            <span class="w-9 h-9 rounded-lg bg-plum-100 text-plum-800 grid place-items-center"><i data-lucide="badge-check" class="w-5 h-5"></i></span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-bold text-plum-900">BPJPH — Sertifikasi Halal</span>
+              <span class="block text-xs text-plum-700/70 truncate">Gratis untuk UMK (self-declare)</span>
+            </span>
+            <i data-lucide="external-link" class="w-4 h-4 text-plum-300 group-hover:text-gold-600"></i>
+          </a>
+          <!-- Shortcut: PIRT -->
+          <a href="https://e-pirt.kemkes.go.id" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-xl border border-plum-100 px-3.5 py-3 hover:border-gold-500 hover:bg-gold-100/40 transition group">
+            <span class="w-9 h-9 rounded-lg bg-plum-100 text-plum-800 grid place-items-center"><i data-lucide="file-check-2" class="w-5 h-5"></i></span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-bold text-plum-900">PIRT — Makanan Rumahan</span>
+              <span class="block text-xs text-plum-700/70 truncate">Izin edar produk kemasan rumah</span>
+            </span>
+            <i data-lucide="external-link" class="w-4 h-4 text-plum-300 group-hover:text-gold-600"></i>
+          </a>
+          <!-- Shortcut: Merek -->
+          <a href="https://dgip.go.id" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-xl border border-plum-100 px-3.5 py-3 hover:border-gold-500 hover:bg-gold-100/40 transition group">
+            <span class="w-9 h-9 rounded-lg bg-plum-100 text-plum-800 grid place-items-center"><i data-lucide="stamp" class="w-5 h-5"></i></span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-bold text-plum-900">DJKI — Merek Dagang</span>
+              <span class="block text-xs text-plum-700/70 truncate">Lindungi nama usaha Anda</span>
+            </span>
+            <i data-lucide="external-link" class="w-4 h-4 text-plum-300 group-hover:text-gold-600"></i>
+          </a>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<!-- ================================================================
+     5. FOOTER
+================================================================ -->
+<footer class="bg-plum-950 text-plum-300 mt-4">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col md:flex-row md:items-center gap-5">
+    <div class="flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-lg bg-plum-900 grid place-items-center"><i data-lucide="sprout" class="w-4 h-4 text-gold-500"></i></span>
+      <div>
+        <p class="font-extrabold text-white text-sm">UMKM <span class="text-gold-500">KU</span></p>
+        <p class="text-xs">Pusat bantuan &amp; manajemen digital UMKM Indonesia.</p>
+      </div>
+    </div>
+    <!-- Tautan bantuan ringkas -->
+    <nav class="flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold md:ml-auto" aria-label="Tautan footer">
+      <a href="panduan.html" class="hover:text-gold-500 transition">Panduan</a>
+      <a href="catat.html" class="hover:text-gold-500 transition">Catat Uang</a>
+      <a href="belajar.html" class="hover:text-gold-500 transition">Belajar</a>
+      <a href="bantuan.html" class="hover:text-gold-500 transition">Bantuan</a>
+    </nav>
+  </div>
+  <div class="border-t border-plum-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 text-xs flex flex-col sm:flex-row gap-1.5 sm:items-center">
+      <span>© <span id="yearNow">2026</span> UMKM KU. Dibuat dengan ♥ untuk pelaku UMKM Indonesia.</span>
+      <span class="sm:ml-auto text-plum-300/70">Prototipe dashboard — angka diambil dari backend dummy akun Anda.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ================================================================
+     MODAL: Catat Transaksi Baru (aksi cepat dari welcome banner)
+================================================================ -->
+<div id="modal" class="hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <!-- Latar gelap: klik untuk menutup -->
+  <div class="absolute inset-0 bg-plum-950/60 backdrop-blur-sm" data-close></div>
+  <!-- Panel modal -->
+  <div class="modal-panel relative max-w-md mx-auto mt-20 sm:mt-28 bg-white rounded-2xl shadow-card p-6 mx-4 sm:mx-auto">
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 id="modalTitle" class="font-extrabold text-lg text-plum-900">Catat Transaksi Baru</h2>
+        <p class="text-xs text-plum-700/70 mt-0.5">Tersimpan ke akun Anda — ringkasan, grafik, dan tabel ikut ter-update.</p>
+      </div>
+      <button class="w-9 h-9 grid place-items-center rounded-lg text-plum-700 hover:bg-plum-100" data-close aria-label="Tutup">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Pilihan tipe: Masuk / Keluar -->
+    <div class="grid grid-cols-2 gap-2 mt-5" role="group" aria-label="Tipe transaksi">
+      <button type="button" id="typeIn" class="h-12 rounded-xl border-2 font-bold text-sm inline-flex items-center justify-center gap-2 border-sem-in bg-sem-inSoft text-sem-in">
+        <i data-lucide="arrow-down-left" class="w-4 h-4"></i> Uang Masuk
+      </button>
+      <button type="button" id="typeOut" class="h-12 rounded-xl border-2 font-bold text-sm inline-flex items-center justify-center gap-2 border-plum-100 bg-white text-plum-700/70">
+        <i data-lucide="arrow-up-right" class="w-4 h-4"></i> Uang Keluar
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form id="txForm" class="mt-4 space-y-4" novalidate>
+      <div>
+        <label for="fJumlah" class="block text-sm font-bold text-plum-800 mb-1.5">Jumlah (Rp)</label>
+        <input id="fJumlah" inputmode="numeric" autocomplete="off" placeholder="contoh: 150.000"
+               class="w-full h-12 rounded-xl border-2 border-plum-100 px-4 font-semibold text-plum-900 outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-300 transition">
+        <p id="fErr" class="hidden text-xs font-semibold text-sem-out mt-1.5">Isi jumlah lebih dari nol, ya.</p>
+      </div>
+      <div>
+        <label for="fKet" class="block text-sm font-bold text-plum-800 mb-1.5">Keterangan singkat</label>
+        <input id="fKet" maxlength="48" autocomplete="off" placeholder="contoh: Penjualan kopi pagi"
+               class="w-full h-12 rounded-xl border-2 border-plum-100 px-4 font-semibold text-plum-900 outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-300 transition">
+      </div>
+      <div class="flex gap-2.5 pt-1">
+        <button type="button" class="flex-1 h-12 rounded-xl border-2 border-plum-100 font-bold text-plum-800 hover:bg-plum-100 transition" data-close>Batal</button>
+        <button type="submit" class="flex-1 h-12 rounded-xl bg-plum-900 hover:bg-plum-700 text-white font-bold inline-flex items-center justify-center gap-2 transition">
+          <i data-lucide="check" class="w-5 h-5"></i> Simpan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast notifikasi kecil setelah menyimpan -->
+<div id="toast" class="toast fixed bottom-6 left-1/2 z-50 bg-plum-900 text-white rounded-full pl-4 pr-5 py-3 shadow-card flex items-center gap-2.5" role="status">
+  <i data-lucide="check-circle-2" class="w-5 h-5 text-gold-500"></i>
+  <span class="text-sm font-bold" id="toastText">Catatan tersimpan!</span>
+</div>
+
+<!-- Backend dummy UMKM KU (database, seed, auth, API) -->
+<script src="backend/db.js"></script>
+<script src="backend/seed.js"></script>
+<script src="backend/auth.js"></script>
+<script src="backend/api.js"></script>
+
+<script>
+/* ====================================================================
+   JAVASCRIPT VANILLA — dashboard hidup dari backend dummy
+   (data milik akun yang sedang masuk, tersimpan di perangkat)
+==================================================================== */
+(function () {
+  "use strict";
+
+  const $   = s => document.querySelector(s);
+  const rp  = n => "Rp " + (n || 0).toLocaleString("id-ID");
+  const now = new Date();
+
+  /* Seed data demo + restorasi sesi — harus sebelum guard */
+  Seed.ensure();
+  Auth.init();
+
+  /* ---------- Penjaga: halaman ini butuh akun ---------- */
+  if (!Auth.guard("dashboard.html")) return;
+  const USER = Auth.current();
+
+  /* ---------- Util tanggal lokal (aman zona WIB) ---------- */
+  const pad = n => String(n).padStart(2, "0");
+  const dkey = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const thisMonth = dkey(now).slice(0, 7);
+  const bulanIni  = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const tglShort  = iso => new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+
+  /* ---------- Label tanggal header & footer ---------- */
+  $("#todayLabel").textContent = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  $("#yearNow").textContent = now.getFullYear();
+  $("#chipMonth1").textContent = bulanIni;
+
+  /* ---------- Profil pengguna di header & sapaan ---------- */
+  const firstName = USER.nama.split(" ")[0];
+  $("#avatarInit").textContent  = USER.nama.charAt(0).toUpperCase();
+  $("#profileName").textContent = firstName;
+  $("#profileUsaha").textContent = USER.usaha || "Pemilik Usaha";
+  $("#ddName").textContent  = USER.nama;
+  $("#ddUsaha").textContent = (USER.usaha ? USER.usaha + " · " : "") + "Pemilik";
+  $("#greet").textContent   = "Selamat datang kembali, " + firstName + "! 👋";
+  if (USER.usaha) {
+    $("#greetSub").textContent = "Ringkasan singkat performa " + USER.usaha + " bulan ini — semua angka diambil dari catatan yang Anda simpan.";
+    $("#chartUsaha").textContent = USER.usaha;
+  }
+
+  /* ---------- Hitung seri grafik 7 hari dari transaksi ---------- */
+  function seriesFromRows(rows) {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      days.push({ key: dkey(d), label: d.toLocaleDateString("id-ID", { weekday: "short" }), masuk: 0, keluar: 0 });
+    }
+    rows.forEach(r => {
+      const day = days.find(x => x.key === dkey(new Date(r.at)));
+      if (day) day[r.jenis === "masuk" ? "masuk" : "keluar"] += r.jumlah;
+    });
+    return days;
+  }
+
+  /* ---------- Render: Metric Cards (bulan berjalan) ---------- */
+  function renderMetrics(rows) {
+    const bulan = rows.filter(r => dkey(new Date(r.at)).slice(0, 7) === thisMonth);
+    const masuk  = bulan.filter(r => r.jenis === "masuk").reduce((s, r) => s + r.jumlah, 0);
+    const keluar = bulan.filter(r => r.jenis === "keluar").reduce((s, r) => s + r.jumlah, 0);
+    $("#mMasuk").textContent  = rp(masuk);
+    $("#mKeluar").textContent = rp(keluar);
+    $("#mUntung").textContent = rp(masuk - keluar);
+  }
+
+  /* ---------- Render: kartu Status Legalitas (dari checklist Urus Izin) ---------- */
+  function renderLegal(state) {
+    const items = [
+      { kode: "NIB",   on: state.nib },
+      { kode: "Halal", on: state.halal },
+      { kode: "PIRT",  on: state.pirt },
+      { kode: "Merek", on: state.merek }
+    ];
+    const done = items.filter(i => i.on).length;
+    $("#legalValue").textContent = done + " dari 4 Izin Aktif";
+    $("#legalCount").textContent = done === 4 ? "Lengkap ✓" : (4 - done) + " langkah lagi";
+    $("#legalChips").innerHTML = items.map(i =>
+      '<span class="text-[11px] font-bold rounded-full px-2 py-1 ' +
+      (i.on ? "bg-sem-inSoft text-sem-in" : "bg-plum-50 text-plum-700/60") + '">' +
+      (i.on ? "✓ " : "○ ") + i.kode + (i.on ? " · Selesai" : " · Belum") + "</span>"
+    ).join("");
+  }
+
+  /* ---------- Render: Grafik batang CSS (Masuk vs Keluar) ---------- */
+  function renderChart(rows) {
+    const days = seriesFromRows(rows);
+    const max = Math.max(1, ...days.flatMap(d => [d.masuk, d.keluar]));
+    $("#chartBars").innerHTML = days.map(d => {
+      const hM = Math.round(d.masuk / max * 100);
+      const hK = Math.round(d.keluar / max * 100);
+      return (
+        '<div class="flex-1 min-w-0 flex items-end justify-center gap-1 h-44">' +
+          '<div class="bar w-3 sm:w-4 rounded-t-md bg-gold-500" style="height:0%" data-h="' + hM + '" title="' + d.label + " · Masuk " + rp(d.masuk) + '"></div>' +
+          '<div class="bar w-3 sm:w-4 rounded-t-md bg-plum-300" style="height:0%" data-h="' + hK + '" title="' + d.label + " · Keluar " + rp(d.keluar) + '"></div>' +
+        "</div>"
+      );
+    }).join("");
+    $("#chartLabels").innerHTML = days.map((d, i) =>
+      '<span class="flex-1 min-w-0 text-center text-[11px] font-bold ' +
+      (i === 6 ? "text-gold-600" : "text-plum-700/60") + '">' + d.label + "</span>"
+    ).join("");
+    $("#chartEmpty").classList.toggle("hidden", days.some(d => d.masuk || d.keluar));
+    /* Animasikan tinggi batang setelah DOM terpasang */
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      document.querySelectorAll("#chartBars .bar").forEach(b => { b.style.height = b.dataset.h + "%"; });
+    }));
+  }
+
+  /* ---------- Render: streak hari aktif mencatat (widget Langkah) ---------- */
+  function renderStreak(rows) {
+    const days = seriesFromRows(rows);
+    const aktif = days.filter(d => d.masuk || d.keluar).length;
+    const n = Math.min(5, aktif);
+    $("#streakLabel").textContent = n + "/5";
+    $("#streakBar").style.width = (n / 5 * 100) + "%";
+  }
+
+  /* ---------- Render: Tabel 5 transaksi terakhir ---------- */
+  function renderTable(rows) {
+    const top = rows.slice(0, 5);
+    $("#txBody").innerHTML = top.length ? top.map(t => {
+      const masuk = t.jenis === "masuk";
+      const hariIni = dkey(new Date(t.at)) === dkey(now);
+      return (
+        "<tr class=\"hover:bg-plum-50/60 transition\">" +
+          '<td class="px-5 md:px-6 py-3.5 whitespace-nowrap font-semibold text-plum-700/80">' + (hariIni ? "Hari ini" : tglShort(t.at)) + "</td>" +
+          '<td class="px-4 py-3.5 font-semibold text-plum-900">' + (t.catatan || (masuk ? "Uang masuk" : "Uang keluar")).replace(/</g, "&lt;") + "</td>" +
+          '<td class="px-4 py-3.5">' +
+            '<span class="inline-flex items-center gap-1 text-xs font-extrabold rounded-full px-2.5 py-1 ' +
+              (masuk ? "bg-sem-inSoft text-sem-in" : "bg-sem-outSoft text-sem-out") + '">' +
+              (masuk ? "↓ Masuk" : "↑ Keluar") + "</span></td>" +
+          '<td class="px-4 py-3.5 text-right font-extrabold whitespace-nowrap ' + (masuk ? "text-sem-in" : "text-sem-out") + '">' +
+            (masuk ? "+" : "−") + rp(t.jumlah) + "</td>" +
+          '<td class="px-5 md:px-6 py-3.5"><span class="inline-flex items-center gap-1 text-xs font-bold text-sem-in"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Tercatat</span></td>' +
+        "</tr>"
+      );
+    }).join("") :
+    '<tr><td colspan="5" class="px-6 py-8 text-center text-sm text-plum-700/70">Belum ada catatan. Mulai dari tombol <b>+ Catat Transaksi Baru</b> di atas.</td></tr>';
+    if (window.lucide) lucide.createIcons(); /* ikon baru di tabel perlu dirender ulang */
+  }
+
+  /* ---------- Muat semua data dari backend dummy ---------- */
+  async function muat() {
+    const [rows, legal] = await Promise.all([Api.transaksi.list(), Api.legalitas.get()]);
+    renderMetrics(rows);
+    renderChart(rows);
+    renderStreak(rows);
+    renderTable(rows);
+    renderLegal(legal);
+  }
+
+  /* ---------- Toast ---------- */
+  let toastTimer;
+  function toast(msg) {
+    $("#toastText").textContent = msg;
+    $("#toast").classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 2600);
+  }
+
+  /* ---------- Dropdown profil ---------- */
+  const profileMenu = $("#profileMenu");
+  $("#profileBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    const open = !profileMenu.classList.contains("hidden");
+    profileMenu.classList.toggle("hidden", open);
+    $("#profileBtn").setAttribute("aria-expanded", String(!open));
+  });
+  document.addEventListener("click", e => {
+    if (!$("#profileWrap").contains(e.target)) profileMenu.classList.add("hidden");
+  });
+  $("#btnKeluar").addEventListener("click", () => {
+    Auth.keluar();
+    location.href = "index.html";
+  });
+
+  /* ---------- Menu mobile ---------- */
+  $("#menuBtn").addEventListener("click", () => {
+    const m = $("#mobileMenu");
+    const open = m.classList.toggle("hidden");
+    $("#menuBtn").setAttribute("aria-expanded", String(!open));
+  });
+
+  /* ---------- Modal Catat Transaksi ---------- */
+  const modal = $("#modal");
+  let tipeTx = "masuk";
+
+  function setTipe(t) {
+    tipeTx = t;
+    const on  = ["border-sem-in", "bg-sem-inSoft", "text-sem-in"];
+    const onO = ["border-sem-out", "bg-sem-outSoft", "text-sem-out"];
+    const off = ["border-plum-100", "bg-white", "text-plum-700/70"];
+    const inB = $("#typeIn"), outB = $("#typeOut");
+    inB.classList.remove(...on, ...off);  outB.classList.remove(...onO, ...off);
+    if (t === "masuk") { inB.classList.add(...on); outB.classList.add(...off); }
+    else { outB.classList.add(...onO); inB.classList.add(...off); }
+  }
+  $("#typeIn").addEventListener("click", () => setTipe("masuk"));
+  $("#typeOut").addEventListener("click", () => setTipe("keluar"));
+
+  function openModal() {
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    setTimeout(() => $("#fJumlah").focus(), 60);
+  }
+  function closeModal() {
+    modal.classList.add("hidden");
+    document.body.style.overflow = "";
+    $("#txForm").reset();
+    $("#fErr").classList.add("hidden");
+  }
+  $("#btnCatatBaru").addEventListener("click", openModal);
+  modal.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", closeModal));
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal(); });
+
+  /* Format ribuan saat mengetik nominal */
+  $("#fJumlah").addEventListener("input", function () {
+    const d = this.value.replace(/[^\d]/g, "").slice(0, 12);
+    this.value = d ? Number(d).toLocaleString("id-ID") : "";
+  });
+
+  /* Simpan transaksi → API → muat ulang semua tampilan */
+  $("#txForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const jml = Number($("#fJumlah").value.replace(/[^\d]/g, ""));
+    const ket = $("#fKet").value.trim() || (tipeTx === "masuk" ? "Uang masuk" : "Uang keluar");
+    if (!jml || jml <= 0) { $("#fErr").classList.remove("hidden"); $("#fJumlah").focus(); return; }
+    await Api.transaksi.add({ jenis: tipeTx, jumlah: jml, catatan: ket });
+    await muat();
+    closeModal();
+    toast("Catatan " + (tipeTx === "masuk" ? "pemasukan" : "pengeluaran") + " " + rp(jml) + " tersimpan!");
+  });
+
+  /* ---------- Muat awal + ikon ---------- */
+  muat();
+  if (window.lucide) lucide.createIcons();
+})();
+</script>
+</body>
+</html>

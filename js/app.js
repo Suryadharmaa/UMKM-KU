@@ -1,5 +1,5 @@
 /* ============================================================
-   UMKM KU  js/app.js
+   UMKM KU — js/app.js
    Kerangka UI bersama untuk SEMUA halaman:
    header, navigasi aktif, area akun, footer, animasi reveal.
    Halaman cukup memanggil: App.boot('nama-halaman')
@@ -8,6 +8,7 @@ window.App = (function () {
   "use strict";
 
   const NAV = [
+    { id: "dashboard", href: "dashboard.html", label: "Dashboard" },
     { id: "panduan", href: "panduan.html", label: "Panduan" },
     { id: "catat",   href: "catat.html",   label: "Catat Uang" },
     { id: "layanan", href: "layanan.html", label: "Urus Izin" },
@@ -17,6 +18,7 @@ window.App = (function () {
   ];
 
   const CHIPS = [
+    { href: "dashboard.html", label: "Dashboard" },
     { href: "panduan.html", label: "Panduan Usaha" },
     { href: "catat.html",   label: "Catat Uang" },
     { href: "layanan.html", label: "Urus Izin" },
@@ -48,7 +50,7 @@ window.App = (function () {
     if (!u) return '<a href="masuk.html" class="btn btn-gold small">Masuk</a>';
     const nama = u.nama.split(" ")[0];
     return (
-      '<span class="user-chip" title="' + u.nama + (u.usaha ? "  " + u.usaha : "") + '">' +
+      '<span class="user-chip" title="' + u.nama + (u.usaha ? " — " + u.usaha : "") + '">' +
         '<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>' +
         "<b>" + esc(nama) + "</b>" +
       "</span>" +
@@ -79,6 +81,7 @@ window.App = (function () {
             "<p>Pusat bantuan digital untuk pelaku usaha mikro, kecil, dan menengah Indonesia. Ringan, ramah pemula, dan gratis.</p>" +
           "</div>" +
           "<div><h5>Jelajah</h5><ul>" +
+            '<li><a href="dashboard.html">Dashboard</a></li>' +
             '<li><a href="panduan.html">Panduan Usaha</a></li>' +
             '<li><a href="catat.html">Catat Uang</a></li>' +
             '<li><a href="layanan.html">Urus Izin</a></li>' +
@@ -86,15 +89,15 @@ window.App = (function () {
             '<li><a href="belajar.html">Belajar</a></li>' +
           "</ul></div>" +
           "<div><h5>Sumber Resmi</h5><ul>" +
-            '<li><a href="https://oss.go.id" target="_blank" rel="noopener">oss.go.id  NIB</a></li>' +
-            '<li><a href="https://bpjph.halal.go.id" target="_blank" rel="noopener">bpjph.halal.go.id  Halal</a></li>' +
-            '<li><a href="https://e-pirt.kemkes.go.id" target="_blank" rel="noopener">e-pirt.kemkes.go.id  PIRT</a></li>' +
-            '<li><a href="https://dgip.go.id" target="_blank" rel="noopener">dgip.go.id  Merek</a></li>' +
-            '<li><a href="https://sapa.umkm.go.id" target="_blank" rel="noopener">sapa.umkm.go.id  SAPA UMKM</a></li>' +
+            '<li><a href="https://oss.go.id" target="_blank" rel="noopener">oss.go.id — NIB</a></li>' +
+            '<li><a href="https://bpjph.halal.go.id" target="_blank" rel="noopener">bpjph.halal.go.id — Halal</a></li>' +
+            '<li><a href="https://e-pirt.kemkes.go.id" target="_blank" rel="noopener">e-pirt.kemkes.go.id — PIRT</a></li>' +
+            '<li><a href="https://dgip.go.id" target="_blank" rel="noopener">dgip.go.id — Merek</a></li>' +
+            '<li><a href="https://sapa.umkm.go.id" target="_blank" rel="noopener">sapa.umkm.go.id — SAPA UMKM</a></li>' +
           "</ul></div>" +
         "</div>" +
         '<div class="foot-note">' +
-          "<span>© 2026 UMKM KU  Prototipe v2 (backend dummy). Bukan situs pemerintah; konten adalah ringkasan edukatif.</span>" +
+          "<span>© 2026 UMKM KU — Prototipe v2 (backend dummy). Bukan situs pemerintah; konten adalah ringkasan edukatif.</span>" +
           "<span>Dibuat dengan ♥ untuk pelaku UMKM Indonesia.</span>" +
         "</div>" +
       "</div>"
